@@ -184,7 +184,7 @@ void getProcessInfor(DWORD pid, HANDLE hSnapshot_Thread, HANDLE hSnapshot_Proces
         cout << "Image Name: " << ProcessName << "  |  PID: " << pid << endl;
     }
     cout << "    Priority: " << pPriority << endl
-        << "    Number of Threads: " << thdCounter << endl
+        << "    Number of Threads: " << thdCounter << endl;
 }
 
 int main()
