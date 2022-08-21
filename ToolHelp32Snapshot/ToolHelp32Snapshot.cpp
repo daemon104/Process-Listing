@@ -98,7 +98,7 @@ void getProcessInfor(DWORD pid, HANDLE hSnapshot_Thread, HANDLE hSnapshot_Proces
 {
     HANDLE hSnapshot_Module = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
     TCHAR ProcessName[MAX]; // Process name
-    DWORD  thdCounter = 0, hndCounter = 0; // Thread, Handle counter
+    DWORD  thdCounter = 0; // Thread counter
     LONG pPriority = 0; // Process priority
 
     PROCESSENTRY32 pEntry; // Process entry
@@ -163,10 +163,8 @@ void getProcessInfor(DWORD pid, HANDLE hSnapshot_Thread, HANDLE hSnapshot_Proces
         {
             do
             {
-                hndCounter++;
                 mEntry.dwSize = sizeof(mEntry);
-
-
+				
             } while (Module32Next(hSnapshot_Module, &mEntry));
         }
     }
@@ -187,7 +185,6 @@ void getProcessInfor(DWORD pid, HANDLE hSnapshot_Thread, HANDLE hSnapshot_Proces
     }
     cout << "    Priority: " << pPriority << endl
         << "    Number of Threads: " << thdCounter << endl
-        << "    Number of Handles: " << hndCounter << endl;
 }
 
 int main()
