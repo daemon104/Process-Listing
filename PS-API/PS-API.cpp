@@ -53,20 +53,20 @@ void ErrorMessage(DWORD ErrorID)
     FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, ErrorID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         ErrorBuffer, (sizeof(ErrorBuffer) / sizeof(wchar_t)), NULL);
-    wcout << ErrorBuffer << endl;
+    wcout << ErrorBuffer;
 }
 
 // Set process privilege
 bool SetProcessPrivilege(
     HANDLE hToken, 
-    LPCWSTR lpszPrivilege, 
+    LPCSTR lpszPrivilege, 
     BOOL bEnablePrivilege)
 {
     TOKEN_PRIVILEGES tp;
     LUID luid;
 
     // Lookup privilege value
-    if (!LookupPrivilegeValue(NULL, lpszPrivilege, &luid))
+    if (!LookupPrivilegeValueA(NULL, lpszPrivilege, &luid))
     {
         cout << "Look up privilege value failed: " << GetLastError() << endl;
         return false;
@@ -129,7 +129,6 @@ void getProcessInfor(DWORD pid)
 int main()
 {
     // Change access token of this process to enter debug mode (Debug privilege)
-	/*
     HANDLE hToken = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, GetCurrentProcessId()); 
     OpenProcessToken(hToken, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken); 
     bool Debug = SetProcessPrivilege(hToken, SE_DEBUG_NAME, TRUE); 
@@ -145,7 +144,6 @@ int main()
         cout << "Successfully enable debug privilege!\n" << endl;
         CloseHandle(hToken);
     }
-	*/
 
     // Start gathering process information
     DWORD pid[1024], bytes_rcv, number_of_PID;
@@ -167,6 +165,12 @@ int main()
     quickSort(pid, 0, number_of_PID - 1);
 
     // Print process information
+
+    cout << "===================\n"
+        << "Process Enumeration\n"
+        << "==================="
+        << "\n\n";
+
     for (int i = 0; i < number_of_PID; i++)
     {
         getProcessInfor(pid[i]);
