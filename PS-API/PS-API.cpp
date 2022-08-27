@@ -129,9 +129,10 @@ void getProcessInfor(DWORD pid)
 int main()
 {
     // Change access token of this process to enter debug mode (Debug privilege)
+    const char* DebugName = "SeDebugPrivilege";
     HANDLE hToken = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, GetCurrentProcessId()); 
     OpenProcessToken(hToken, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken); 
-    bool Debug = SetProcessPrivilege(hToken, SE_DEBUG_NAME, TRUE); 
+    bool Debug = SetProcessPrivilege(hToken, DebugName, TRUE); 
 
     if (Debug == false)
     {

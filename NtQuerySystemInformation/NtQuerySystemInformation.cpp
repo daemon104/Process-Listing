@@ -1,30 +1,14 @@
-#define WIN32_LEARN_AND_MEAN 1
-#define UNICODE 1
-
-#include <Windows.h>
-#include <Shlwapi.h>
-#include <winternl.h>
-#include <iostream>
-#include <wchar.h>
-#include <stdlib.h>
-#include <iomanip>
-#include <WinBase.h>
-
-#pragma comment(lib, "Ntdll.lib")
-#pragma comment(lib, "Shlwapi.lib")
+#include "psl.h"
 
 using namespace std;
 
-constexpr unsigned int STATUS_SUCCESS = 0;
-constexpr unsigned int STATUS_INFO_LENGTH_MISMATCH = 0x0C0000004;
-
 template <typename T>
 LPCWSTR GetReadableSize(T size) {
-	LPCWSTR lpSize = (LPCWSTR)VirtualAlloc(NULL, MAX_PATH, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	LPCWSTR lpSize = (LPCWSTR)VirtualAlloc(nullptr, MAX_PATH, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 	if (StrFormatByteSizeW((LONGLONG)size, (PWSTR)lpSize, MAX_PATH) == NULL) {
 		VirtualFree((LPVOID)lpSize, 0, MEM_RELEASE);
-		lpSize = NULL;
+		lpSize = nullptr;
 	}
 	return lpSize;
 }
@@ -32,12 +16,12 @@ LPCWSTR GetReadableSize(T size) {
 LPWSTR getComputerName(void) {
 
 	DWORD Size = MAX_COMPUTERNAME_LENGTH + 1;
-	LPWSTR lpHostName = (LPWSTR)VirtualAlloc(NULL, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	LPWSTR lpHostName = (LPWSTR)VirtualAlloc(nullptr, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 	if (!GetComputerName(lpHostName, &Size)) {
 		cout << "\nCannot get the computer name!!\n";
 		VirtualFree(lpHostName, 0, MEM_RELEASE);
-		lpHostName = NULL;
+		lpHostName = nullptr;
 	}
 	return lpHostName;
 }
@@ -45,18 +29,20 @@ LPWSTR getComputerName(void) {
 LPWSTR getUserName(void) {
 
 	DWORD Size = MAX_COMPUTERNAME_LENGTH + 1;
-	LPWSTR lpUserName = (LPWSTR)VirtualAlloc(NULL, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	LPWSTR lpUserName = (LPWSTR)VirtualAlloc(nullptr, Size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 	if (!GetUserName(lpUserName, &Size)) {
 		cout << "\nCannot get the user name!!\n";
 		VirtualFree(lpUserName, 0, MEM_RELEASE);
-		lpUserName = NULL;
+		lpUserName = nullptr;
 	}
 	return lpUserName;
 }
 
 void PrintProcessInfo(PSYSTEM_PROCESS_INFORMATION p)
 {
+	PSYSTEM_PROCESS_INFORMATION temp = p;
+
 	wcout << L"\nProcess information for " << getComputerName()
 		<< L"-" << getUserName() << ":\n\n";
 	
@@ -73,19 +59,135 @@ void PrintProcessInfo(PSYSTEM_PROCESS_INFORMATION p)
 	
 	do {		
 		wcout << setfill(L' ')
-			<< setw(14) << left << HandleToULong(p->UniqueProcessId)
-			<< setw(42) << left << (p->ImageName.Buffer ? p->ImageName.Buffer : L"Idle")
-			<< setw(10) << left << p->HandleCount
-			<< setw(10) << left << p->NumberOfThreads
-			<< setw(12) << left << p->BasePriority
-			<< setw(16) << left << p->SessionId
-			<< setw(16) << left << GetReadableSize(p->VirtualSize)
+			<< setw(14) << left << HandleToULong(temp->UniqueProcessId)
+			<< setw(42) << left << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
+			<< setw(10) << left << temp->HandleCount
+			<< setw(10) << left << temp->NumberOfThreads
+			<< setw(12) << left << temp->BasePriority
+			<< setw(16) << left << temp->SessionId
+			<< setw(16) << left << GetReadableSize(temp->VirtualSize)
 			<< endl;
 		
-		p = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)p + p->NextEntryOffset);
-	} while (p->NextEntryOffset);
+		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
+	} while (temp->NextEntryOffset);
+
+	VirtualFree(temp, 0, MEM_RELEASE);
+	temp = nullptr;
 }
 
+void PrintThreadInfo(PSYSTEM_PROCESS_INFORMATION p) 
+{
+	PSYSTEM_PROCESS_INFORMATION temp = p;
+
+	do
+	{
+		wcout << L"\nProcess information for " << getComputerName()
+			<< L"-" << getUserName() << ":\n\n"
+			<< L"\n" << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
+			<< L" - " << HandleToULong(temp->UniqueProcessId) << "\n";
+
+		cout << setfill(' ')
+			<< "\t"
+			<< setw(11) << left << "TID"
+			<< setw(21) << left << "Base Priority"
+			<< setw(24) << left << "Dynamic Priority"
+			<< setw(13) << left << "State"
+			<< endl;
+		cout << setfill('=')
+			<< "\t"
+			<< setw(69) << left << "" << endl;
+
+		PSYSTEM_THREAD_INFORMATION pt = PSYSTEM_THREAD_INFORMATION(temp + 1);
+
+		for (int i = 0; i < temp->NumberOfThreads; i++)
+		{
+			string state = "";
+
+			cout << setfill(' ')
+				<< "\t"
+				<< setw(11) << left << HandleToULong(pt->ClientId.UniqueThread)
+				<< setw(21) << left << pt->BasePriority
+				<< setw(24) << left << pt->Priority;
+			
+			switch (pt->ThreadState)
+			{
+			case 0:
+				state = "Init";
+				break;
+			case 1:
+				state = "Ready";
+				break;
+			case 2:
+				state = "Running";
+				break;
+			case 3:
+				state = "Standby";
+				break;
+			case 4:
+				state = "Terminate";
+				break;
+			case 5:
+				state = "Waiting";
+				break;
+			case 6:
+				state = "Transition";
+				break;
+			case 7:
+				state = "Deferred ready";
+				break;
+			default:
+				state = "Unknown";
+				break;
+			}
+			cout << setw(13) << left << state
+				<< endl;
+			pt++;
+		}
+
+		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
+	} while (temp->NextEntryOffset);
+
+	VirtualFree(temp, 0, MEM_RELEASE);
+	temp = nullptr;
+}
+
+void PrintMemoryInfo(PSYSTEM_PROCESS_INFORMATION p)
+{
+	PSYSTEM_PROCESS_INFORMATION temp = p;
+
+	wcout << L"\nProcess's memory information for " << getComputerName()
+		<< L"-" << getUserName() << ":\n\n";
+
+	cout << setfill(' ')
+		<< setw(11) << left << "PID"
+		<< setw(30) << left << "Page-file/Peak"
+		<< setw(32) << left << "Working Set/Peak"
+		<< setw(28) << left << "Virtual/Peak"
+		<< setw(19) << left << "Private Page Count"
+		<< endl;
+	cout << setfill('=')
+		<< setw(120) << left << "" << endl;
+
+	do {
+
+		wstring str1 = wstring(GetReadableSize(temp->PagefileUsage)) + L" / " + wstring(GetReadableSize(temp->PeakPagefileUsage));
+		wstring str2 = wstring(GetReadableSize(temp->WorkingSetSize)) + L" / " + wstring(GetReadableSize(temp->PeakWorkingSetSize));
+		wstring str3 = wstring(GetReadableSize(temp->VirtualSize)) + L" / " + wstring(GetReadableSize(temp->PeakVirtualSize));
+
+		wcout << setfill(L' ')
+			<< setw(11) << left << HandleToULong(temp->UniqueProcessId)
+			<< setw(30) << left << str1
+			<< setw(32) << left << str2
+			<< setw(28) << left << str3
+			<< setw(19) << left << GetReadableSize(temp->PrivatePageCount)
+			<< endl;
+
+		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
+	} while (temp->NextEntryOffset);
+
+	VirtualFree(temp, 0, MEM_RELEASE);
+	temp = nullptr;
+}
 
 BOOL QueryProcessInformation(PSYSTEM_PROCESS_INFORMATION p)
 {
@@ -96,9 +198,9 @@ BOOL QueryProcessInformation(PSYSTEM_PROCESS_INFORMATION p)
 	while (true)
 	{
 		// Check if pointer p is not NULL then free it
-		if (p != NULL) { VirtualFree(p, 0, MEM_RELEASE); }
+		if (p != nullptr) { VirtualFree(p, 0, MEM_RELEASE); }
 		
-		p = (PSYSTEM_PROCESS_INFORMATION)VirtualAlloc(NULL, dwSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		p = (PSYSTEM_PROCESS_INFORMATION)VirtualAlloc(nullptr, dwSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 		// Query system to get the process list information
 		Status = NtQuerySystemInformation(SystemProcessInformation, (PVOID)p, (ULONG)dwSize, &dwRet);
@@ -111,7 +213,7 @@ BOOL QueryProcessInformation(PSYSTEM_PROCESS_INFORMATION p)
 		else if (Status != STATUS_INFO_LENGTH_MISMATCH)		
 		{	
 			VirtualFree(p, 0, MEM_RELEASE);
-			p = NULL;
+			p = nullptr;
 			cout << "NtQuerySystemInformation failed with error code: " << Status << endl;
 			return FALSE;
 		}
@@ -123,16 +225,22 @@ BOOL QueryProcessInformation(PSYSTEM_PROCESS_INFORMATION p)
 	// Print process info
 	PrintProcessInfo(p);
 
+	// Print thread info
+	//PrintThreadInfo(p);
+
+	// Print process's memory info
+	//PrintMemoryInfo(p);
+
 	// Free p after use
 	VirtualFree(p, 0, MEM_RELEASE);
-	p = NULL;
+	p = nullptr;
 	return TRUE;
 }
 
 int main()
 {
 	BOOL check = FALSE; 
-	PSYSTEM_PROCESS_INFORMATION p = NULL;
+	PSYSTEM_PROCESS_INFORMATION p = nullptr;
 	
 	cout << "Start gathering processes information...\n\n";
 
