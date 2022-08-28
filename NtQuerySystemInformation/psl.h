@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <iomanip>
 #include <WinBase.h>
-#include <string.h>
+#include <string>
 
 #pragma once
 #pragma comment(lib, "Ntdll.lib")
@@ -24,7 +24,7 @@ constexpr unsigned int STATUS_INFO_LENGTH_MISMATCH = 0x0C0000004;
 // These code below are for user to know details about what we will going to use in this program.
 // All these structures are well defined in winternl.h so if you want to go futher and enumerate more information, you could uncomment
 // the include line above.
-//***************************************************************
+//****************************************************************
 
 
 typedef struct _UNICODE_STRING {
@@ -95,7 +95,7 @@ typedef enum _SYSTEM_INFORMATION_CLASS {
 	SystemPolicyInformation = 134,
 } SYSTEM_INFORMATION_CLASS;
 
-// This is just for user to know all params of the the function, its implement in Ntdll libary
+// This is just for user to know all params of the function, its implement in Ntdll libary
 EXTERN_C NTSTATUS NTAPI NtQuerySystemInformation(
 	IN SYSTEM_INFORMATION_CLASS SystemInformationClass,
 	OUT PVOID SystemInformation,

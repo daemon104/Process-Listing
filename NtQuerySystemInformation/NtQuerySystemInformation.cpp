@@ -2,6 +2,8 @@
 
 using namespace std;
 
+
+// Function to get readable size
 template <typename T>
 LPCWSTR GetReadableSize(T size) {
 	LPCWSTR lpSize = (LPCWSTR)VirtualAlloc(nullptr, MAX_PATH, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -13,6 +15,8 @@ LPCWSTR GetReadableSize(T size) {
 	return lpSize;
 }
 
+
+// Get computer name (host name)
 LPWSTR getComputerName(void) {
 
 	DWORD Size = MAX_COMPUTERNAME_LENGTH + 1;
@@ -26,6 +30,8 @@ LPWSTR getComputerName(void) {
 	return lpHostName;
 }
 
+
+// Get user name (the loggon user that run this program)
 LPWSTR getUserName(void) {
 
 	DWORD Size = MAX_COMPUTERNAME_LENGTH + 1;
@@ -39,6 +45,26 @@ LPWSTR getUserName(void) {
 	return lpUserName;
 }
 
+
+// Help page
+void Manual()
+{
+	cout << "\n=================================="
+		<< "\nBasic process enumeration program"
+		<< "\n=================================="
+		<< "\n\nThis program is use for enumerate some basic process information using NtQuerySystemInformation() function defined in Ntdll.dll. See more details in MSDN, docs of winternl.h"
+		<< "\n\nList of arguments:\n\n"
+		<< "\tdefault, --process: Print process information (All running process, including system-level process)"	
+		<< "\n\t-t,  --thread: Print process's thread details"
+		<< "\n\t-m, --memory: Print process's memory details"
+		<< "\n\t-n, --name <process name>: Print information by specific image name"
+		<< "\n\t-p, --pid <process pid>: Print information by specific pid"
+		<< "\n\t-h, --help: Show help page"
+		<< endl;	
+}
+
+
+// Print process info
 void PrintProcessInfo(PSYSTEM_PROCESS_INFORMATION p)
 {
 	PSYSTEM_PROCESS_INFORMATION temp = p;
@@ -49,13 +75,14 @@ void PrintProcessInfo(PSYSTEM_PROCESS_INFORMATION p)
 	cout << setfill(' ')
 		<< setw(14) << left << "PID"
 		<< setw(42) << left << "Image Name"
-		<< setw(10) << left << "Handle"
-		<< setw(10) << left << "Thread"
+		<< setw(10) << left << "Handles"
+		<< setw(10) << left << "Threads"
 		<< setw(12) << left << "Priority"
 		<< setw(16) << left << "Session ID"
-		<< setw(16) << left << "VM size";
+		<< setw(16) << left << "VM size"
+		<< endl;
 	cout << setfill('=')
-		<< setw(120) << left << "" << endl;
+		<< setw(119) << left << "" << endl;
 	
 	do {		
 		wcout << setfill(L' ')
@@ -75,15 +102,17 @@ void PrintProcessInfo(PSYSTEM_PROCESS_INFORMATION p)
 	temp = nullptr;
 }
 
+
+// Print thread info
 void PrintThreadInfo(PSYSTEM_PROCESS_INFORMATION p) 
 {
 	PSYSTEM_PROCESS_INFORMATION temp = p;
 
+	wcout << L"\nProcess information for " << getComputerName()
+		<< L"-" << getUserName() << ":\n\n";
 	do
-	{
-		wcout << L"\nProcess information for " << getComputerName()
-			<< L"-" << getUserName() << ":\n\n"
-			<< L"\n" << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
+	{	
+		wcout << L"\n" << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
 			<< L" - " << HandleToULong(temp->UniqueProcessId) << "\n";
 
 		cout << setfill(' ')
@@ -151,6 +180,8 @@ void PrintThreadInfo(PSYSTEM_PROCESS_INFORMATION p)
 	temp = nullptr;
 }
 
+
+// Print memory info
 void PrintMemoryInfo(PSYSTEM_PROCESS_INFORMATION p)
 {
 	PSYSTEM_PROCESS_INFORMATION temp = p;
@@ -166,7 +197,7 @@ void PrintMemoryInfo(PSYSTEM_PROCESS_INFORMATION p)
 		<< setw(19) << left << "Private Page Count"
 		<< endl;
 	cout << setfill('=')
-		<< setw(120) << left << "" << endl;
+		<< setw(119) << left << "" << endl;
 
 	do {
 
@@ -189,62 +220,159 @@ void PrintMemoryInfo(PSYSTEM_PROCESS_INFORMATION p)
 	temp = nullptr;
 }
 
-BOOL QueryProcessInformation(PSYSTEM_PROCESS_INFORMATION p)
+
+//// Print process info with specific name
+//void PrintWithName(PSYSTEM_PROCESS_INFORMATION p, string procname)
+//{
+//	PSYSTEM_PROCESS_INFORMATION temp = p;
+//	wstring str1 = wstring(procname.begin(), procname.end());
+//
+//	do {
+//
+//		if (str1 == L"Idle" && HandleToULong(temp->UniqueProcessId) == 0)
+//		{
+//			wcout << L"\nInformation for proccess with image name: Idle"
+//				<< L"\n\tPID: " << HandleToULong(temp->UniqueProcessId)
+//				<< L"\n\tNumber of handles: " << temp->HandleCount
+//				<< L"\n\tNumber of thread: " << temp->NumberOfThreads
+//				<< L"\n\tBase priority: " << temp->BasePriority
+//				<< L"\n\tSession ID: " << temp->SessionId
+//				<< L"\n\tVirtual memory size: " << GetReadableSize(temp->VirtualSize)
+//				<< endl;
+//			break;
+//		}
+//		else if (wstring((temp->ImageName.Buffer)) == str1)
+//		{
+//			wcout << L"\nInformation for proccess with image name: " << temp->ImageName.Buffer
+//				<< L"\n\tPID: " << HandleToULong(temp->UniqueProcessId) 
+//				<< L"\n\tNumber of handles: " << temp->HandleCount
+//				<< L"\n\tNumber of thread: " << temp->NumberOfThreads
+//				<< L"\n\tBase priority: " << temp->BasePriority
+//				<< L"\n\tSession ID: " << temp->SessionId
+//				<< L"\n\tVirtual memory size: " << GetReadableSize(temp->VirtualSize)
+//				<< endl;
+//			break;
+//		}
+//
+//		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
+//	} while (temp->NextEntryOffset);
+//
+//	VirtualFree(temp, 0, MEM_RELEASE);
+//	temp = nullptr;
+//}
+
+
+// Print process info with specific pid
+void PrintWithPID(PSYSTEM_PROCESS_INFORMATION p, int pid)
 {
+	PSYSTEM_PROCESS_INFORMATION temp = p;
+
+	do {
+
+		if (HandleToULong(temp->UniqueProcessId) == (ULONG)pid)
+		{
+			wcout << L"\nInformation for proccess with PID: " << HandleToULong(temp->UniqueProcessId)
+				<< L"\n\tImage Name: " << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
+				<< L"\n\tNumber of handles: " << temp->HandleCount
+				<< L"\n\tNumber of thread: " << temp->NumberOfThreads
+				<< L"\n\tBase priority: " << temp->BasePriority
+				<< L"\n\tSession ID: " << temp->SessionId
+				<< L"\n\tVirtual memory size: " << GetReadableSize(temp->VirtualSize)
+				<< endl;
+			break;
+		}
+
+		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
+	} while (temp->NextEntryOffset);
+
+	VirtualFree(temp, 0, MEM_RELEASE);
+	temp = nullptr;
+}
+
+
+int main(int argc, char* argv[])
+{
+	BOOL check = FALSE; 
 	DWORD dwRet;
 	DWORD dwSize = 0;
+	PSYSTEM_PROCESS_INFORMATION p = nullptr;
 	NTSTATUS Status = STATUS_INFO_LENGTH_MISMATCH;
-	
+
 	while (true)
 	{
 		// Check if pointer p is not NULL then free it
 		if (p != nullptr) { VirtualFree(p, 0, MEM_RELEASE); }
-		
+
 		p = (PSYSTEM_PROCESS_INFORMATION)VirtualAlloc(nullptr, dwSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 		// Query system to get the process list information
 		Status = NtQuerySystemInformation(SystemProcessInformation, (PVOID)p, (ULONG)dwSize, &dwRet);
 
-		if (Status == STATUS_SUCCESS)						
-		{	
-			cout << "Query process information successfully!!" << endl;
-			break;			
+		if (Status == STATUS_SUCCESS)
+		{
+			check = TRUE;
+			break;
 		}
-		else if (Status != STATUS_INFO_LENGTH_MISMATCH)		
-		{	
+		else if (Status != STATUS_INFO_LENGTH_MISMATCH)
+		{
 			VirtualFree(p, 0, MEM_RELEASE);
 			p = nullptr;
-			cout << "NtQuerySystemInformation failed with error code: " << Status << endl;
-			return FALSE;
+			cout << "\nNtQuerySystemInformation failed with error code: " << Status << endl;
+			check = FALSE;
+			break;
 		}
-		
+
 		// Add more 16kb to buffer in case there is more process opened during this loop
 		dwSize = dwRet + (2 << 14);
 	}
-	
-	// Print process info
-	PrintProcessInfo(p);
 
-	// Print thread info
-	//PrintThreadInfo(p);
 
-	// Print process's memory info
-	//PrintMemoryInfo(p);
+	if (check) 
+	{
+		if (argc == 1) 
+		{
+			PrintProcessInfo(p);
+		}
+		else if (argc == 2 || argc == 3 ) 
+		{
+			if (string(argv[1]) == "-h" || string(argv[1]) == "--help") 
+			{
+				Manual();
+			}
+			else if (string(argv[1]) == "-t" || string(argv[1]) == "--thread") 
+			{
+				PrintThreadInfo(p);
+			}
+			else if (string(argv[1]) == "-m" || string(argv[1]) == "--memory") 
+			{
+				PrintMemoryInfo(p);
+			}
+			//else if ((string(argv[1]) == "-n" || string(argv[1]) == "--name") && string(argv[2]) != "")
+			//{
+			//	PrintWithName(p, string(argv[2]));
+			//}
+			else if ((string(argv[1]) == "-p" || string(argv[1]) == "--pid") && string(argv[2]) != "")
+			{
+				int pid = stoi(string(argv[2]));
+				PrintWithPID(p, pid);
+			}
+		}
+		else 
+		{
+			cout << "\nUse -h or --help to show help page.\n";
+		}
 
-	// Free p after use
-	VirtualFree(p, 0, MEM_RELEASE);
-	p = nullptr;
-	return TRUE;
-}
+		// Free p after use
+		if (p != nullptr) 
+		{	
+			VirtualFree(p, 0, MEM_RELEASE);
+			p = nullptr;
+		}
+	}
+	else 
+	{
+		cout << "\nQuery process information failed. Something went wrong. Exiting the program...\n";
+	}
 
-int main()
-{
-	BOOL check = FALSE; 
-	PSYSTEM_PROCESS_INFORMATION p = nullptr;
-	
-	cout << "Start gathering processes information...\n\n";
-
-	check = QueryProcessInformation(p);
-	
 	return 0;
 }
