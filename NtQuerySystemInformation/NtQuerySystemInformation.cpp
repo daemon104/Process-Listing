@@ -57,7 +57,6 @@ void Manual()
 		<< "\tdefault, --process: Print process information (All running process, including system-level process)"	
 		<< "\n\t-t,  --thread: Print process's thread details"
 		<< "\n\t-m, --memory: Print process's memory details"
-		<< "\n\t-n, --name <process name>: Print information by specific image name"
 		<< "\n\t-p, --pid <process pid>: Print information by specific pid"
 		<< "\n\t-h, --help: Show help page"
 		<< endl;	
@@ -220,57 +219,17 @@ void PrintMemoryInfo(PSYSTEM_PROCESS_INFORMATION p)
 	temp = nullptr;
 }
 
-
-//// Print process info with specific name
-//void PrintWithName(PSYSTEM_PROCESS_INFORMATION p, string procname)
-//{
-//	PSYSTEM_PROCESS_INFORMATION temp = p;
-//	wstring str1 = wstring(procname.begin(), procname.end());
-//
-//	do {
-//
-//		if (str1 == L"Idle" && HandleToULong(temp->UniqueProcessId) == 0)
-//		{
-//			wcout << L"\nInformation for proccess with image name: Idle"
-//				<< L"\n\tPID: " << HandleToULong(temp->UniqueProcessId)
-//				<< L"\n\tNumber of handles: " << temp->HandleCount
-//				<< L"\n\tNumber of thread: " << temp->NumberOfThreads
-//				<< L"\n\tBase priority: " << temp->BasePriority
-//				<< L"\n\tSession ID: " << temp->SessionId
-//				<< L"\n\tVirtual memory size: " << GetReadableSize(temp->VirtualSize)
-//				<< endl;
-//			break;
-//		}
-//		else if (wstring((temp->ImageName.Buffer)) == str1)
-//		{
-//			wcout << L"\nInformation for proccess with image name: " << temp->ImageName.Buffer
-//				<< L"\n\tPID: " << HandleToULong(temp->UniqueProcessId) 
-//				<< L"\n\tNumber of handles: " << temp->HandleCount
-//				<< L"\n\tNumber of thread: " << temp->NumberOfThreads
-//				<< L"\n\tBase priority: " << temp->BasePriority
-//				<< L"\n\tSession ID: " << temp->SessionId
-//				<< L"\n\tVirtual memory size: " << GetReadableSize(temp->VirtualSize)
-//				<< endl;
-//			break;
-//		}
-//
-//		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
-//	} while (temp->NextEntryOffset);
-//
-//	VirtualFree(temp, 0, MEM_RELEASE);
-//	temp = nullptr;
-//}
-
-
 // Print process info with specific pid
 void PrintWithPID(PSYSTEM_PROCESS_INFORMATION p, int pid)
 {
 	PSYSTEM_PROCESS_INFORMATION temp = p;
+	BOOL check = FALSE;
 
 	do {
 
 		if (HandleToULong(temp->UniqueProcessId) == (ULONG)pid)
 		{
+			check = TRUE;
 			wcout << L"\nInformation for proccess with PID: " << HandleToULong(temp->UniqueProcessId)
 				<< L"\n\tImage Name: " << (temp->ImageName.Buffer ? temp->ImageName.Buffer : L"Idle")
 				<< L"\n\tNumber of handles: " << temp->HandleCount
@@ -284,6 +243,8 @@ void PrintWithPID(PSYSTEM_PROCESS_INFORMATION p, int pid)
 
 		temp = (PSYSTEM_PROCESS_INFORMATION)((PBYTE)temp + temp->NextEntryOffset);
 	} while (temp->NextEntryOffset);
+
+	if (!check) { cout << "\nThere is no running process with specified pid. Please check the input again...\n"; }
 
 	VirtualFree(temp, 0, MEM_RELEASE);
 	temp = nullptr;
@@ -347,10 +308,6 @@ int main(int argc, char* argv[])
 			{
 				PrintMemoryInfo(p);
 			}
-			//else if ((string(argv[1]) == "-n" || string(argv[1]) == "--name") && string(argv[2]) != "")
-			//{
-			//	PrintWithName(p, string(argv[2]));
-			//}
 			else if ((string(argv[1]) == "-p" || string(argv[1]) == "--pid") && string(argv[2]) != "")
 			{
 				int pid = stoi(string(argv[2]));
