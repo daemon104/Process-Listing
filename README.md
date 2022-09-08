@@ -15,6 +15,7 @@ Process Listing
 * [PS-API](#psapi)
 * [Tool Help Libary](#toolhelp)
 * [Windows Internal](#winternl)
+* [Conclusion](#conclu)
 
 ## Overall <a name="overall"></a>
 
@@ -55,4 +56,6 @@ Thư viện này chỉ hỗ trợ chụp ảnh snapshot của OS trong thời đ
 
 Trước đây, các hàm và struct của Ntqueysysteminformation có rất ít tài liệu về chúng, giờ đây thì msdocs đã lo việc đó rồi: https://docs.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntquerysysteminformation
 
+## Conclusion <a name="conclu"></a>
 
+Có rất nhiều cách để enumrate process trên windows os, tuy các cách ở trên đây sẽ không hiệu quả và lượng thông tin thu được rất ít nhưng trên nhìn chung thì project này cũng đóng góp phần nào ý tưởng để làm nên 1 tool process enumeration
